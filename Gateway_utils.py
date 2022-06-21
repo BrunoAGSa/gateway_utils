@@ -1,0 +1,292 @@
+import re
+import networkx as nx
+import matplotlib.pyplot as plt
+from prettytable import PrettyTable
+
+teste_error = 0        # mudar para 1 para ver a filtragem das seqs ao longo dos filtros
+
+def Atts_graph (seqs_list):
+    node_conver_dic = [
+        ("attB1", "attP1"),
+        ("attB2", "attP2"),
+        ("attB3", "attP3"),
+        ("attB4", "attP4"),
+        ("attP1", "attB1"),
+        ("attP2", "attB2"),
+        ("attP3", "attB3"),
+        ("attP4", "attB4"),
+        ("attL1", "attR1"),
+        ("attL2", "attR2"),
+        ("attL3", "attR3"),
+        ("attL4", "attR4"),
+        ("attR1", "attL1"),
+        ("attR2", "attL2"),
+        ("attR3", "attL3"),
+        ("attR4", "attL4"),
+    ]
+
+    node_conver = dict(node_conver_dic)
+
+    att_all = [
+         "CAAGTTTGTACAAAAAAGCAGGCT",
+         "ACCCAGCTTTCTTGTACAAAGTGG",
+         "CAACTTTGTATAATAAAGTTG",
+         "CAACTTTGTATAGAAAAGTTG",
+         "AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACACATTGATGAGCAATGCTTTTTTATAATGCCAACTTTGTACAAAAAAGCTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA",
+         "AATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTCTTATAATGCCAACTTTGTACAAGAAAGCTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA",
+         "TACAGGTCACTAATACCATCTAAGTAGTTGATTCATAGTGACTGCATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTATTATACAAAGTTGGCATTATAAAAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTT",
+         "AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTTTTATAATGCCAACTTTGTATAGAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATGCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA",
+         "CAAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAMATTGATGAGCAATGCTTTTTTATAATGCCAACTTTGTACAAAAAAGCAGGCT",
+         "ACCCAGCTTTCTTGTACAAAGTTGGCATTATAAGAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTTG",
+         "CAACTTTATTATACAAAGTTGGCATTATAAAAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTT",
+         "AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTTTTATAATGCCAACTTTGTATAGAAAAGTTG",
+         "CAAGTTTGTACAAAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATGCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA",
+         "TACAGGTCACTAATACCATCTAAGTAGTTGRTTCATAGTGACTGCATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTCTTGTACAAAGTGG",
+         "CCATAGTGACTGGATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTATTATACATAGTTG",
+         "CAACTTTGTATAGAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGG"
+          ]
+
+
+    attB1 = "CAAGTTTGTACAAAAAAGCAGGCT"
+    attB2 = "ACCCAGCTTTCTTGTACAAAGTGG"
+    attB3 = "CAACTTTGTATAATAAAGTTG"
+    attB4 = "CAACTTTGTATAGAAAAGTTG"
+    attP1 = "AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACACATTGATGAGCAATGCTTTTTTATAATGCCAACTTTGTACAAAAAAGCTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA"
+    attP2 = "AATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTCTTATAATGCCAACTTTGTACAAGAAAGCTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA"
+    attP3 = "TACAGGTCACTAATACCATCTAAGTAGTTGATTCATAGTGACTGCATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTATTATACAAAGTTGGCATTATAAAAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTT"
+    attP4 = "AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTTTTATAATGCCAACTTTGTATAGAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATGCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA"
+    attL1 = "CAAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAMATTGATGAGCAATGCTTTTTTATAATGCCAACTTTGTACAAAAAAGCAGGCT"
+    attL2 = "ACCCAGCTTTCTTGTACAAAGTTGGCATTATAAGAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTTG"
+    attL3 = "CAACTTTATTATACAAAGTTGGCATTATAAAAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTT"
+    attL4 = "AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTTTTATAATGCCAACTTTGTATAGAAAAGTTG"
+    attR1 = "CAAGTTTGTACAAAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATGCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA"
+    attR2 = "TACAGGTCACTAATACCATCTAAGTAGTTGRTTCATAGTGACTGCATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTCTTGTACAAAGTGG"
+    attR3 = "CCATAGTGACTGGATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTATTATACATAGTTG"
+    attR4 = "CAACTTTGTATAGAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGG"
+
+
+    atts_dic = [
+    ("CAAGTTTGTACAAAAAAGCAGGCT", "attB1"),
+    ("ACCCAGCTTTCTTGTACAAAGTGG","attB2"),
+    ("CAACTTTGTATAATAAAGTTG","attB3"),
+    ("CAACTTTGTATAGAAAAGTTG","attB4"),
+    ("AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACACATTGATGAGCAATGCTTTTTTATAATGCCAACTTTGTACAAAAAAGCTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA", "attP1"),
+    ("AATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTCTTATAATGCCAACTTTGTACAAGAAAGCTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA", "attP2"),
+    ("TACAGGTCACTAATACCATCTAAGTAGTTGATTCATAGTGACTGCATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTATTATACAAAGTTGGCATTATAAAAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTT", "attP3"),
+    ("AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTTTTATAATGCCAACTTTGTATAGAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATGCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA", "attP4"),
+    ("CAAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAMATTGATGAGCAATGCTTTTTTATAATGCCAACTTTGTACAAAAAAGCAGGCT", "attL1"),
+    ("ACCCAGCTTTCTTGTACAAAGTTGGCATTATAAGAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTTG", "attL2"),
+    ("CAACTTTATTATACAAAGTTGGCATTATAAAAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTT", "attL3"),
+    ("AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTTTTATAATGCCAACTTTGTATAGAAAAGTTG", "attL4"),
+    ("CAAGTTTGTACAAAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATGCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA", "attR1"),
+    ("TACAGGTCACTAATACCATCTAAGTAGTTGRTTCATAGTGACTGCATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTCTTGTACAAAGTGG", "attR2"),
+    ("CCATAGTGACTGGATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTATTATACATAGTTG", "attR3"),
+    ("CAACTTTGTATAGAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGG", "attR4")]
+
+    atts_dic_dict = dict(atts_dic)
+
+    lista_seqs_comp = []
+
+    def creat_lista (Dse_list):
+        for str in Dse_list:
+            att_secun = []
+            for att in att_all:
+                for match in re.finditer(att,str):
+                    e = bool (match)
+                    #i = match.start()                             #confirmar se quero usar isto ou não
+                    #f = match.end()
+                    if e is True:
+                        att_secun.append(atts_dic_dict[att])
+                        #att_secun.append(i)
+                        #att_secun.append(f)
+            lista_seqs_comp.append(att_secun)
+
+            #elif len(att_secun) == 4:
+            #    lista_seqs_comp.append(att_secun)
+            #else:
+            #    lista_seqs_comp.append(["Not Valid"])
+
+
+
+
+
+
+    creat_lista(seqs_list)             # testes
+    if teste_error == 1:
+        print(f"{lista_seqs_comp}              Atts todos identificados")     # testes
+
+    p= 0
+    for c in lista_seqs_comp:           #filtrar visto que alguns atts contêm outros dentro
+            for s in c:
+                if s == "attP3":                                 #foram mesmo preciso estes for s inc C
+                    lista_seqs_comp[p].remove("attL3")
+            for s in c:
+                if s == "attP4":
+                    lista_seqs_comp[p].remove("attB4")
+                    lista_seqs_comp[p].remove("attL4")
+            for s in c:
+                if s == "attR4":
+                    lista_seqs_comp[p].remove("attB4")
+            for s in c:
+                if s == "attL4":
+                    lista_seqs_comp[p].remove("attB4")
+
+            p +=1
+
+    if teste_error == 1:
+        print(f"{lista_seqs_comp}            atts já com os comuns retirados") #teste
+        print(",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,")
+    p = 0
+    for c in lista_seqs_comp:
+        if len(c) != 2:
+            del lista_seqs_comp[p]
+            lista_seqs_comp.insert(p,"Not Valid")
+        p += 1
+
+    if teste_error == 1 :
+        print(f"{lista_seqs_comp}              aceitar apenas seqs com 2 atts senao coloca not valid")
+        print(",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,..........................")
+    f = 0
+    for c in lista_seqs_comp:        # indicar as pessoas que n sequencia não é valida e eliminar  #faz parte do filtro das validas ou não
+        if c == "Not Valid" :                                   #eliminar o que está mal
+            print(f"Seq Nº{f + 1} is not valid por analyse")                # mesma duvida do anterior 0 ou 1
+            lista_seqs_comp.remove(c)
+        f += 1
+
+
+    if teste_error == 1:
+        print("---------------------------------------------------------------------------")
+        print(f"{lista_seqs_comp}                  lista já com atts não validos retirados")
+        print("---------------------------------------------------------------------------")
+
+    lista_seqs_partes = lista_seqs_comp             #precisei disto para ser mais facil em baixo
+    lista_seqs_Graph_nodes = []
+    G = nx.Graph()
+
+    for c in lista_seqs_comp:                                      #transformar strings em Nodes
+        f = " ".join(c)
+        lista_seqs_Graph_nodes.append(f)
+
+
+    if teste_error == 1:
+        print(f"{lista_seqs_Graph_nodes}            colocar td na mesma lista aka lista a usar")
+
+    lista_seqs_nodes_converted = []                   #lista dos atts complementares
+
+
+    for c in lista_seqs_partes:
+        list_secun = []
+        for a in c:
+            list_secun.append(node_conver[a])
+        lista_seqs_nodes_converted.append(list_secun)
+
+    if teste_error == 1:
+        print(f"{lista_seqs_nodes_converted}   lista das seqs convertidas")
+
+    lista_seqs_Graph_nodes_comp = []
+    for c in lista_seqs_nodes_converted:                                      #transformar strings em Nodes
+        f = " ".join(c)
+        lista_seqs_Graph_nodes_comp.append(f)
+
+
+    G = nx.MultiDiGraph()
+
+    for c in lista_seqs_Graph_nodes:
+        G.add_node(c)
+
+    if teste_error == 1:
+        print("------------------")
+        print(f"{G.nodes}                     lista de nodes")
+        print(f"{lista_seqs_Graph_nodes_comp}             lista junta de nodes comp")
+
+    lista_nodes_unica = G.nodes
+
+
+    lista_temp = []
+    for c in lista_nodes_unica:
+        for n in lista_seqs_Graph_nodes_comp:
+            if c == n:
+                lista_temp.append(c)
+
+    if teste_error == 1:
+        print(lista_temp)
+    p = 0
+    s = 1
+    n = 0
+    while len(lista_temp) != n:
+        G.add_edge(lista_temp[p],lista_temp[s])
+        G.add_edge(lista_temp[s],lista_temp[p])
+        p += 2
+        s += 2
+        n += 2
+
+    if teste_error == 1:
+        print(G.edges)
+
+    options = {
+        "node_color": "Blue",
+        "alpha": 0.5,
+        "node_size": 2500,
+        "font_size": 6,
+        "width" : 1  ,
+
+    }
+
+    #subax1 = plt.subplot(212)
+
+
+    nx.draw(G,with_labels=True , font_weight = "bold",**options)
+    plt.show()
+
+def Atts_table (seqs_list):
+    attB1 = "CAAGTTTGTACAAAAAAGCAGGCT"
+    attB2 = "ACCCAGCTTTCTTGTACAAAGTGG"
+    attB3 = "CAACTTTGTATAATAAAGTTG"
+    attB4 = "CAACTTTGTATAGAAAAGTTG"
+    attP1 = "AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACACATTGATGAGCAATGCTTTTTTATAATGCCAACTTTGTACAAAAAAGCTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA"
+    attP2 = "AATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTCTTATAATGCCAACTTTGTACAAGAAAGCTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA"
+    attP3 = "TACAGGTCACTAATACCATCTAAGTAGTTGATTCATAGTGACTGCATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTATTATACAAAGTTGGCATTATAAAAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTT"
+    attP4 = "AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTTTTATAATGCCAACTTTGTATAGAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATGCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA"
+    attL1 = "CAAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAMATTGATGAGCAATGCTTTTTTATAATGCCAACTTTGTACAAAAAAGCAGGCT"
+    attL2 = "ACCCAGCTTTCTTGTACAAAGTTGGCATTATAAGAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTTG"
+    attL3 = "CAACTTTATTATACAAAGTTGGCATTATAAAAAAGCATTGCTTATCAATTTGTTGCAACGAACAGGTCACTATCAGTCAAAATAAAATCATTATTT"
+    attL4 = "AAATAATGATTTTATTTTGACTGATAGTGACCTGTTCGTTGCAACAAATTGATAAGCAATGCTTTTTTATAATGCCAACTTTGTATAGAAAAGTTG"
+    attR1 = "CAAGTTTGTACAAAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATGCAGTCACTATGAATCAACTACTTAGATGGTATTAGTGACCTGTA"
+    attR2 = "TACAGGTCACTAATACCATCTAAGTAGTTGRTTCATAGTGACTGCATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTCTTGTACAAAGTGG"
+    attR3 = "CCATAGTGACTGGATATGTTGTGTTTTACAGTATTATGTAGTCTGTTTTTTATGCAAAATCTAATTTAATATATTGATATTTATATCATTTTACGTTTCTCGTTCAACTTTATTATACATAGTTG"
+    attR4 = "CAACTTTGTATAGAAAAGTTGAACGAGAAACGTAAAATGATATAAATATCAATATATTAAATTAGATTTTGCATAAAAAACAGACTACATAATACTGTAAAACACAACATATCCAGTCACTATGG"
+
+    def find_att(seq_lista, atts):
+        for match in re.finditer(atts, seq_lista):
+                s = match.start()
+                e = match.end()
+                return (f"{s} - {e}")
+
+    tabela = PrettyTable ()
+    tabela.field_names = [" Seq Nº ", "attB1", "attB2", "attB3", "attB4", "attP1", "attP2", "attP3", "attP4", "attL1", "attL2", "attL3", "attL4", "attR1", "attR2", "attR3", "attR4"]
+    j = len(seqs_list)
+    i = 0
+    n = 0
+    while i != j:
+        tabela.add_row([n + 1,
+                        find_att(seqs_list[n], attB1),
+                        find_att(seqs_list[n], attB2),
+                        find_att(seqs_list[n], attB3),
+                        find_att(seqs_list[n], attB4),
+                        find_att(seqs_list[n], attP1),
+                        find_att(seqs_list[n], attP2),
+                        find_att(seqs_list[n], attP3),
+                        find_att(seqs_list[n], attP4),
+                        find_att(seqs_list[n], attL1),
+                        find_att(seqs_list[n], attL2),
+                        find_att(seqs_list[n], attL3),
+                        find_att(seqs_list[n], attL4),
+                        find_att(seqs_list[n], attR1),
+                        find_att(seqs_list[n], attR2),
+                        find_att(seqs_list[n], attR3),
+                        find_att(seqs_list[n], attR4)])
+        j -= 1
+        n +=1
+
+    tabela.hrules = 1
+    print(tabela)
